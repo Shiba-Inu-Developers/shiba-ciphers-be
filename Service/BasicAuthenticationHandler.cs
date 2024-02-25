@@ -1,12 +1,9 @@
-using Microsoft.EntityFrameworkCore;
 using my_new_app.Model;
-using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication;
 using System.Text;
 using System.Security.Claims;
 using Microsoft.Extensions.Options;
 using System.Text.Encodings.Web;
-using Microsoft.AspNetCore.Authorization;
 namespace my_new_app.Service;
 public class BasicAuthenticationHandler : AuthenticationHandler<AuthenticationSchemeOptions>
 {

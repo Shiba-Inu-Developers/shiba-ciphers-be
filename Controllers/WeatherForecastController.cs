@@ -85,7 +85,6 @@ public class WeatherForecastController : ControllerBase
     }
 
     [HttpGet]
-    [Authorize]
     [Route("users")]
     public IEnumerable<User> GetUsers()
     {

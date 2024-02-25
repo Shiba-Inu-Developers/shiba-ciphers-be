@@ -1,14 +1,11 @@
 using Microsoft.EntityFrameworkCore;
 using my_new_app.Model;
 using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication;
 using System.Text;
-using System.Security.Claims;
-using Microsoft.Extensions.Options;
-using System.Text.Encodings.Web;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
-using Microsoft.AspNetCore.Authorization;
 using Microsoft.IdentityModel.Tokens;
+using my_new_app.IdemRiesim;
+using my_new_app.Middleware;
 using my_new_app.Service;
 
 
@@ -23,6 +20,7 @@ builder.Services.AddAuthentication("BasicAuthentication")
     .AddScheme<AuthenticationSchemeOptions, BasicAuthenticationHandler>("BasicAuthentication", options => { });
 
 var jwtSettings = builder.Configuration.GetSection("Jwt");
+builder.Services.Configure<JwtSettings>(builder.Configuration.GetSection("Jwt"));
 builder.Services.AddAuthentication(options =>
     {
         options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -45,6 +43,8 @@ builder.Services.AddAuthentication(options =>
     });
 
 
+builder.Services.AddScoped<AuthService>();
+
 var app = builder.Build();
 
 // Configure the HTTP request pipeline.
@@ -57,7 +57,9 @@ if (!app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseStaticFiles();
 
+
 app.UseRouting();
+app.UseMiddleware<TokenValidationMiddleware>();
 app.UseAuthentication();
 app.UseAuthorization();
 

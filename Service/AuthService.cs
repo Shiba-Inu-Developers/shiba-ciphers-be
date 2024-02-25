@@ -7,6 +7,8 @@ using Microsoft.IdentityModel.Tokens;
 using MimeKit;
 using MailKit.Net.Smtp;
 using MailKit.Security;
+using Microsoft.EntityFrameworkCore;
+
 
 namespace my_new_app.Service;
 
@@ -117,9 +119,10 @@ public class AuthService
             issuer: "MyAppAPI",
             audience: "MyAppUsers",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(30), // Token expiration time
+            expires: DateTime.Now.AddMinutes(2), // Token expiration time
             signingCredentials: credentials);
-
+        
+        
         return new JwtSecurityTokenHandler().WriteToken(token);
     }
 
@@ -131,5 +134,29 @@ public class AuthService
             rng.GetBytes(randomNumber);
             return Convert.ToBase64String(randomNumber);
         }
+    }
+    
+    public async Task<User> GetUserByEmail(string email)
+    {
+        return await _context.GetUserByEmailAsync(email);
+    }
+
+    public async Task UpdateUser(User user)
+    {
+        await _context.UpdateUserAsync(user);
+    }
+    
+    public string GetEmailFromToken(string token)
+    {
+        var handler = new JwtSecurityTokenHandler();
+        var jwtToken = handler.ReadToken(token) as JwtSecurityToken;
+
+        if (jwtToken == null)
+        {
+            return null;
+        }
+
+        var emailClaim = jwtToken.Claims.FirstOrDefault(claim => claim.Type == "sub");
+        return emailClaim?.Value;
     }
 }

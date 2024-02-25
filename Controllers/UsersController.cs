@@ -1,91 +1,119 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using my_new_app.Model;
-using my_new_app.DTOs; 
-namespace my_new_app.Controllers;
+using my_new_app.DTOs;
+using System;
+using System.Linq;
+using System.Threading.Tasks;
 
-[ApiController]
-[Route("[controller]")]
-public class UsersController : ControllerBase
+namespace my_new_app.Controllers
 {
-    private readonly ApplicationDbContext context;
-
-    public UsersController(ApplicationDbContext context)
+    [ApiController]
+    [Route("[controller]")]
+    public class UsersController : ControllerBase
     {
-        this.context = context;
-    }
+        private readonly ApplicationDbContext _context;
 
-    [HttpGet]
-    [Route("Users")]
-    public IEnumerable<User> GetUsers()
-    {
-        var users = context.MyUsers.ToList();
-        return users;
-    }
-    
-    [HttpGet]
-    [Route("User/{id}")]
-     public IActionResult GetUserById(int id){
-        //var user = context.MyUsers.FirstOrDefault(u => u.Id == id);
-        var users = context.MyUsers.ToList();
-        User user = null;
-        foreach (var u in users)
+        public UsersController(ApplicationDbContext context)
         {
-            if(u.Id == id){
-                user = u;
+            _context = context;
+        }
+
+        [HttpGet]
+        [Route("Users")]
+        public IActionResult GetUsers()
+        {
+            var users = _context.MyUsers.ToList();
+            return Ok(users);
+        }
+
+        [HttpGet]
+        [Route("User/{id}")]
+        public IActionResult GetUserById(int id)
+        {
+            var user = _context.MyUsers.FirstOrDefault(u => u.Id == id);
+            if (user == null)
+            {
+                return NotFound();
+            }
+            var userDto = new UserDTO
+            {
+                Id = user.Id,
+                Email = user.Email,
+                UserName = user.Email
+            };
+            return Ok(userDto);
+        }
+
+        [HttpPost]
+        [Route("User")]
+        public IActionResult CreateUser([FromBody] CreateUserDTO createUserDTO)
+        {
+            try
+            {
+                if (createUserDTO == null)
+                {
+                    return BadRequest("Invalid data");
+                }
+                if (_context.MyUsers.Any(u => u.Email == createUserDTO.Email))
+                {
+                    return Conflict(new { error = "A user with this email already exists." });
+                }
+
+                var newUser = new User
+                {
+                    Email = createUserDTO.Email,
+                    Password = createUserDTO.Password,
+                };
+
+                _context.MyUsers.Add(newUser);
+                _context.SaveChanges();
+
+                var createdUserDTO = new UserDTO
+                {
+                    Id = newUser.Id,
+                    Email = newUser.Email,
+                    UserName = newUser.Email
+                };
+
+                return CreatedAtAction(nameof(GetUserById), new { id = createdUserDTO.Id }, createdUserDTO);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.Message);
+                return StatusCode(500, new { error = "Internal Server Error" });
             }
         }
-        if (user == null)
-        {
-            return NotFound(); 
-        }
-        var userDto = new UserDTO
-        {
-        Id = user.Id,
-        Email = user.Email,
-        UserName = user.Email
-        };
 
-        return Ok(userDto);
-    }
-    [HttpPost]
-    [Route("User")]
-    public IActionResult CreateUser([FromBody] CreateUserDTO createUserDTO)
-    {
-        try{
-        if (createUserDTO == null)
+        [HttpPost]
+        [Route("refresh-token")]
+        public async Task<IActionResult> RefreshToken([FromBody] TokenRequestDTO request)
         {
-            return BadRequest("Invalid data");
-        }
-        if (context.MyUsers.Any(u => u.Email == createUserDTO.Email))
-        {
-            return Conflict(new { error = "A user with this email already exists." });
-            //return BadRequest(new { error = "Invalid request. Please check the data provided." }); //?
+            if (request == null || string.IsNullOrEmpty(request.RefreshToken))
+            {
+                return BadRequest("Invalid request.");
+            }
 
+            // Implement refresh token logic
+            // var result = await _authService.RefreshTokenAsync(request.RefreshToken);
+            // if (result.NewAccessToken == null)
+            // {
+            //     return Unauthorized("Invalid or expired refresh token.");
+            // }
+
+            // Temporary response for demonstration purposes
+            return Ok(new
+            {
+                AccessToken = "NewAccessToken",
+                RefreshToken = "NewRefreshToken"
+            });
         }
 
-        var newUser = new User
+        private (bool IsValid, string UserId) ValidateRefreshToken(string refreshToken)
         {
-            Email = createUserDTO.Email,
-            Password = createUserDTO.Password,
-        };
-
-        context.MyUsers.Add(newUser);
-        context.SaveChanges();
-
-        var createdUserDTO = new UserDTO
-        {
-            Id = newUser.Id,
-            Email = newUser.Email,
-            UserName = newUser.Email
-        };
-
-        return CreatedAtAction(nameof(GetUserById), new { id = createdUserDTO.Id }, createdUserDTO);
+            // Implement logic to validate the refresh token, e.g., checking it against a database
+            // For simplicity, this is a placeholder implementation
+            return (true, "userId"); // Placeholder: return actual validation result
+        }
     }
-    catch (Exception ex)
-    {
-        Console.WriteLine(ex.Message);
-        return StatusCode(500, new { error = "Internal Server Error" });
-    }
-
-}
 }
