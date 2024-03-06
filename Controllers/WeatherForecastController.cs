@@ -69,6 +69,27 @@ public class WeatherForecastController : ControllerBase
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
+    
+    [HttpPost]
+    [Route("Logout")]
+    public async Task<IActionResult> Logout()
+    {
+        // Extract bearer token from authorization header
+        var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+        if (authHeader != null && authHeader.StartsWith("Bearer "))
+        {
+            var token = authHeader.Substring("Bearer ".Length).Trim();
+            
+            var userEmail = authService.GetEmailFromToken(token);
+            User user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+            user.RefreshToken = "";
+            context.SaveChanges();
+            
+            return Ok(new { token = "", message = "Logout successful" });
+        }
+
+        return BadRequest(new { message = "No authorization token provided" });
+    }
 
     [HttpGet]
     public IEnumerable<WeatherForecast> Get()

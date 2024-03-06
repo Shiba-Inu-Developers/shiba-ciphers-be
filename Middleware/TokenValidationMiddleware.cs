@@ -53,8 +53,12 @@ namespace my_new_app.Middleware
                     }
                     else
                     {
+
                         // Replace the old token with the new one in the request header
                         context.Request.Headers["Authorization"] = $"Bearer {newToken}";
+                        context.Response.StatusCode = 200;
+                        await context.Response.WriteAsync(newToken);
+                        return;
                     }
                 }
             }
