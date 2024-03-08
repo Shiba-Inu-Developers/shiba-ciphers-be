@@ -25,7 +25,7 @@ namespace my_new_app.Middleware
 
         public async Task Invoke(HttpContext context)
         {
-            var securedPaths = new List<string> { "/weatherforecast/Users" };
+            var securedPaths = new List<string> { "/weatherforecast/Users","/weatherforecast/user-info","/weatherforecast/update-user-info" };
 
             if (securedPaths.Any(path => context.Request.Path.StartsWithSegments(path)))
             {

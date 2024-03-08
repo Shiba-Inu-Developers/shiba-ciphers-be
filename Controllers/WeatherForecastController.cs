@@ -224,4 +224,77 @@ public class WeatherForecastController : ControllerBase
     {
         return Ok(new { message = "Hello World!" });
     }
+    
+    
+    [HttpGet]
+    [Route("user-info")] 
+    public async Task<IActionResult> GetUserInfo()      //TODO create UserService for Users
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                var userInfoDto = new UserInfoDTO()
+                {
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                };
+
+                return Ok(userInfoDto);
+            }
+            return BadRequest(new { message = "No authorization token provided" });     //Unauthorized or BadRequest?
+        }catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    [HttpPut]
+    [Route("update-user-info")] 
+    public async Task<IActionResult> ChangeUserInfo([FromBody] UserUpdateInfoDTO userUpdate)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                if (userUpdate == null)
+                {
+                    return BadRequest(new { message = "Invalid data" });
+                }
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (userUpdate.FirstName != null && user != null)
+                {
+                    user.FirstName = userUpdate.FirstName;
+                }
+                if (userUpdate.LastName != null && user != null)
+                {
+                    user.LastName = userUpdate.LastName;
+                }
+
+                context.SaveChanges();
+                var userInfoDto = new UserInfoDTO()
+                {
+                    Email = user.Email,
+                    FirstName = user.FirstName,
+                    LastName = user.LastName
+                };
+
+                return Ok(new { message = "User profile was updated" });
+            }
+            return BadRequest(new { message = "No authorization token provided" }); //Unauthorized or BadRequest?
+        }catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
 }
