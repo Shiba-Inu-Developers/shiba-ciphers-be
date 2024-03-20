@@ -2,6 +2,7 @@
 using my_new_app.Model;
 using my_new_app.DTOs;
 using my_new_app.Service;
+using System;
 
 namespace my_new_app.Controllers;
 
@@ -297,4 +298,11 @@ public class WeatherForecastController : ControllerBase
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
+
+  [HttpGet]
+  [Route("shiba")]
+  public IActionResult GetShiba()
+  {
+    return PhysicalFile(@"/mnt/datastore/shiba.jpg", "image/jpeg");
+  }
 }
