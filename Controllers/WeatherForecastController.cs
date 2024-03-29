@@ -289,7 +289,7 @@ public class WeatherForecastController : ControllerBase
                     LastName = user.LastName
                 };
 
-                return Ok(userInfoDto);
+                return Ok(userInfoDto); //something
             }
             return BadRequest(new { message = "No authorization token provided" }); //Unauthorized or BadRequest?
         }catch (Exception ex)
