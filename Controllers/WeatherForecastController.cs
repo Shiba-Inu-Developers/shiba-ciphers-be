@@ -288,7 +288,7 @@ public class WeatherForecastController : ControllerBase
                     LastName = user.LastName
                 };
 
-                return Ok(new { message = "User profile was updated" });
+                return Ok(userInfoDto);
             }
             return BadRequest(new { message = "No authorization token provided" }); //Unauthorized or BadRequest?
         }catch (Exception ex)
