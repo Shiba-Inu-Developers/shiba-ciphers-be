@@ -102,4 +102,107 @@ public class MyImagesController : ControllerBase
         }
     }
     
+    
+    //Get concrete dokument by Date for concrete user 
+    [HttpGet]
+    [Route("date-image")]
+    public IActionResult GetImageByDate()
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    var images = context.MyImages
+                        .Where(img => img.UserId == user.Id)
+                        .ToList();
+
+                    if (images.Any())
+                    {
+                        var closestImage = images
+                            .OrderBy(img => Math.Abs((img.CreationDate - DateTime.Now).Ticks))
+                            .First();
+
+                        var imageDTO = new ImageHistoryDTO()
+                        {
+                            Type = closestImage.Type,
+                            Title = closestImage.Title,
+                            Content = closestImage.Content,
+                            Decrypted = closestImage.Decrypted,
+                            CreationDate = closestImage.CreationDate
+                        };
+
+                        return Ok(imageDTO);
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "No images found for the user" });
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { message = "User not found" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    
+    //PUT for update decrypted text only, by Id image
+    [HttpPut]
+    [Route("decrypt-images")]
+    public IActionResult DecryptImage([FromBody] DecryptImageDTO decryptImageDto)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                if (decryptImageDto == null || decryptImageDto.Id==null)
+                {
+                    return BadRequest(new { message = "Invalid data" });
+                }
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    var image  = context.MyImages.FirstOrDefault(u => u.UserId == user.Id);
+                    if (image.Id != decryptImageDto.Id)
+                    {
+                        return BadRequest(new { message = "Image is not correct" });
+                    }
+                    image.Decrypted = decryptImageDto.Decrypted;
+                    context.SaveChanges();
+                    return Ok(new { message = "Decrypted text was updated!" });
+                }
+                return BadRequest(new { message = "No authorization token provided" });
+                
+            }
+            return BadRequest(new { message = "No authorization token provided" }); 
+        }catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    //PUT update stepper?
+    //Get Image by ID?
+    //GET ...?
+    
 }
