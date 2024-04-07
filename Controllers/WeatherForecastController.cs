@@ -282,14 +282,13 @@ public class WeatherForecastController : ControllerBase
                 }
 
                 context.SaveChanges();
-                var userInfoDto = new UserInfoDTO()
+                var userInfoDto = new UserUpdateInfoDTO()
                 {
-                    Email = user.Email,
                     FirstName = user.FirstName,
                     LastName = user.LastName
                 };
 
-                return Ok(userInfoDto); //something
+                return Ok(userInfoDto);
             }
             return BadRequest(new { message = "No authorization token provided" }); //Unauthorized or BadRequest?
         }catch (Exception ex)
