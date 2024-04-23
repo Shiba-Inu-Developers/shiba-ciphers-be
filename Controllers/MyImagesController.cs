@@ -205,4 +205,84 @@ public class MyImagesController : ControllerBase
     //Get Image by ID?
     //GET ...?
     
+    
+
+    [HttpPost]
+    [Route("save-image-ds")]
+    public async Task<IActionResult> SaveImage(IFormFile image)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    if (image != null && image.Length > 0)
+                    {
+                        
+                        string imageType;
+                        HttpContext.Request.Cookies.TryGetValue("imageType", out imageType);
+                        
+
+                        if (imageType == "Text")
+                            {
+                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "TextFolder");
+                                if (!Directory.Exists(directoryPath))
+                                {
+                                    Directory.CreateDirectory(directoryPath);
+                                }
+                            
+                                var filePath = Path.Combine(directoryPath, "TextNameHere.png");
+                                using (var stream = System.IO.File.Create(filePath))
+                                {
+                                    await image.CopyToAsync(stream);
+                                }
+                            }
+                        else if (imageType == "Key")
+                            {
+                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "KeyFolder");
+                                if (!Directory.Exists(directoryPath))
+                                {
+                                    Directory.CreateDirectory(directoryPath);
+                                }
+                            
+                                var filePath = Path.Combine(directoryPath, "KeyNameHere.png");
+                                using (var stream = System.IO.File.Create(filePath))
+                                {
+                                    await image.CopyToAsync(stream);
+                                }
+                            }
+                        else
+                        {
+                            return BadRequest(new { message = "No image type provided" });
+                        }
+                        
+                        return Ok(new { message = "Image was saved!" });
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "No image provided" });
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { message = "No authorization token provided" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
 }
