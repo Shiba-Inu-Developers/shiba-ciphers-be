@@ -206,7 +206,9 @@ public class MyImagesController : ControllerBase
     //GET ...?
     
     
-
+    // Zo stepperu zavolame tento endpoint a v cookies pošleme type aby sme nemuseli mať zvášť endpointy pre text a key
+    // Všetko sa bude ukladať do Cache adresára, kde bude pre každého usera zvlášť adresár pre text a key
+    // Treba ešte dorobiť aby sa to ukladalo do správneho adresára a zavolať aj service na dešifrovanie
     [HttpPost]
     [Route("save-image-ds")]
     public async Task<IActionResult> SaveImage(IFormFile image)
@@ -284,5 +286,7 @@ public class MyImagesController : ControllerBase
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
+    
+    //TODO: endpoint -> final decipher, zober všetko z cache a pošli na service na dešifrovanie (text, kluc)
     
 }
