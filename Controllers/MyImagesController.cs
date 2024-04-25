@@ -237,7 +237,7 @@ public class MyImagesController : ControllerBase
 
                         if (imageType == "Text")
                             {
-                                //var directoryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "datastore", "Cache", userEmail, "TextFolder");
+                                
                                 var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "TextFolder");
                                 if (!Directory.Exists(directoryPath))
                                 {
@@ -292,6 +292,12 @@ public class MyImagesController : ControllerBase
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
+    
+    
+    
+    
+    
+    
     
     //TODO: endpoint -> final decipher, zober všetko z cache a pošli na service na dešifrovanie (text, kluc)
     
