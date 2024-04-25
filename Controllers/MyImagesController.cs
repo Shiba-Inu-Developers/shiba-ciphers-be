@@ -7,6 +7,11 @@ using System.Linq;
 using System.Threading.Tasks;
 using my_new_app.Service;
 
+
+//TODO: TOTO LEN NA TESTOVANIE
+using System.IO;
+using System.Reflection;
+
 namespace my_new_app.Controllers;
 
 [ApiController]
@@ -227,11 +232,12 @@ public class MyImagesController : ControllerBase
                     {
                         
                         string imageType;
-                        HttpContext.Request.Cookies.TryGetValue("imageType", out imageType);
+                        imageType = HttpContext.Request.Headers["imageType"].FirstOrDefault();
                         
 
                         if (imageType == "Text")
                             {
+                                //var directoryPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "datastore", "Cache", userEmail, "TextFolder");
                                 var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "TextFolder");
                                 if (!Directory.Exists(directoryPath))
                                 {
