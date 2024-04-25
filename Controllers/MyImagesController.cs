@@ -233,12 +233,13 @@ public class MyImagesController : ControllerBase
                         
                         string imageType;
                         imageType = HttpContext.Request.Headers["imageType"].FirstOrDefault();
+                        string step = HttpContext.Request.Headers["step"].FirstOrDefault();
                         
 
                         if (imageType == "Text")
                             {
                                 
-                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "TextFolder");
+                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "TextFolder", step);
                                 if (!Directory.Exists(directoryPath))
                                 {
                                     Directory.CreateDirectory(directoryPath);
@@ -252,7 +253,7 @@ public class MyImagesController : ControllerBase
                             }
                         else if (imageType == "Key")
                             {
-                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "KeyFolder");
+                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "KeyFolder", step);
                                 if (!Directory.Exists(directoryPath))
                                 {
                                     Directory.CreateDirectory(directoryPath);
