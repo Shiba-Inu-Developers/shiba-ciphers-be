@@ -298,6 +298,8 @@ public class MyImagesController : ControllerBase
     
     
     
+    // function that will save the record about image being in the datastore into myImages database
+    
     
     
     //TODO: endpoint -> final decipher, zober všetko z cache a pošli na service na dešifrovanie (text, kluc)
