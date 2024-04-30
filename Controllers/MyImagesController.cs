@@ -8,11 +8,13 @@ using System.Threading.Tasks;
 using my_new_app.Service;
 using System.Security.Cryptography;
 using System.Text;
+using System.Text.Json;
 
 
 //TODO: TOTO LEN NA TESTOVANIE
 using System.IO;
 using System.Reflection;
+
 
 namespace my_new_app.Controllers;
 
@@ -212,6 +214,12 @@ public class MyImagesController : ControllerBase
     //Get Image by ID?
     //GET ...?
     
+    public class dummyJson
+    {
+        public int TextPercentage { get; set; }
+        public int KeyPercentage { get; set; }
+    }
+    
     
     [HttpPost]
     [Route("stepper-s0")]
@@ -233,10 +241,10 @@ public class MyImagesController : ControllerBase
                         //s1, s2t, s3t, s2k, s3k, s4, s5
 
                         //TODO: call service for classification
-                        
+
                         Task<string> hashImageTask = ComputeImageHash(image);
                         string hashImage = await hashImageTask;
-                        
+
                         // create record in database
                         var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id);
                         if (myImage == null)
@@ -255,21 +263,33 @@ public class MyImagesController : ControllerBase
                         {
                             return BadRequest(new { message = "Image is already in the Database" });
                         }
-                        
+
                         // upload image to cache (DS)
-                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache",
+                            userEmail);
                         if (!Directory.Exists(directoryPath))
                         {
                             Directory.CreateDirectory(directoryPath);
                         }
-                    
+
                         var filePath = Path.Combine(directoryPath, hashImage);
                         using (var stream = System.IO.File.Create(filePath))
                         {
                             await image.CopyToAsync(stream);
                         }
+
+                        //create dummy JSON
+                        var dummyJson = new dummyJson
+                        {
+                            TextPercentage = 90,
+                            KeyPercentage = 10
+                        };
+
+                        string jsonToSend = JsonSerializer.Serialize(dummyJson);
+
+                        return Ok(jsonToSend);
                         
-                        return Ok(new { message = "Image was saved!" });
+                        //return Ok(new { message = "Image was saved!" });
                     }
                     else
                     {
