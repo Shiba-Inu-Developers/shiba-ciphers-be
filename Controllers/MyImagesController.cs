@@ -6,6 +6,8 @@ using System;
 using System.Linq;
 using System.Threading.Tasks;
 using my_new_app.Service;
+using System.Security.Cryptography;
+using System.Text;
 
 
 //TODO: TOTO LEN NA TESTOVANIE
@@ -211,12 +213,9 @@ public class MyImagesController : ControllerBase
     //GET ...?
     
     
-    // Zo stepperu zavolame tento endpoint a v cookies pošleme type aby sme nemuseli mať zvášť endpointy pre text a key
-    // Všetko sa bude ukladať do Cache adresára, kde bude pre každého usera zvlášť adresár pre text a key
-    // Treba ešte dorobiť aby sa to ukladalo do správneho adresára a zavolať aj service na dešifrovanie
     [HttpPost]
-    [Route("save-image-ds")]
-    public async Task<IActionResult> SaveImage(IFormFile image)
+    [Route("stepper-s0")]
+    public async Task<IActionResult> stepper_s0(IFormFile image)
     {
         try
         {
@@ -230,44 +229,44 @@ public class MyImagesController : ControllerBase
                 {
                     if (image != null && image.Length > 0)
                     {
-                        
-                        string imageType;
-                        imageType = HttpContext.Request.Headers["imageType"].FirstOrDefault();
-                        string step = HttpContext.Request.Headers["step"].FirstOrDefault();
-                        
+                        //steps:
+                        //s1, s2t, s3t, s2k, s3k, s4, s5
 
-                        if (imageType == "Text")
-                            {
-                                
-                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "TextFolder", step);
-                                if (!Directory.Exists(directoryPath))
-                                {
-                                    Directory.CreateDirectory(directoryPath);
-                                }
-                            
-                                var filePath = Path.Combine(directoryPath, "TextNameHere.png");
-                                using (var stream = System.IO.File.Create(filePath))
-                                {
-                                    await image.CopyToAsync(stream);
-                                }
-                            }
-                        else if (imageType == "Key")
-                            {
-                                var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail, "KeyFolder", step);
-                                if (!Directory.Exists(directoryPath))
-                                {
-                                    Directory.CreateDirectory(directoryPath);
-                                }
-                            
-                                var filePath = Path.Combine(directoryPath, "KeyNameHere.png");
-                                using (var stream = System.IO.File.Create(filePath))
-                                {
-                                    await image.CopyToAsync(stream);
-                                }
-                            }
+                        //TODO: call service for classification
+                        
+                        Task<string> hashImageTask = ComputeImageHash(image);
+                        string hashImage = await hashImageTask;
+                        
+                        // create record in database
+                        var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id);
+                        if (myImage == null)
+                        {
+                            myImage = new MyImages();
+                            myImage.UserId = user.Id;
+                            myImage.Type = "TextDocument";
+                            myImage.Title = "DefaultTitle";
+                            myImage.Content = "DefaultContent";
+                            //myImage.Source = "DefaultSource";
+                            myImage.Decrypted = "DefaultDecrypted";
+                            myImage.Hash = hashImage;
+                            context.MyImages.Add(myImage);
+                        }
                         else
                         {
-                            return BadRequest(new { message = "No image type provided" });
+                            return BadRequest(new { message = "Image is already in the Database" });
+                        }
+                        
+                        // upload image to cache (DS)
+                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                        if (!Directory.Exists(directoryPath))
+                        {
+                            Directory.CreateDirectory(directoryPath);
+                        }
+                    
+                        var filePath = Path.Combine(directoryPath, hashImage);
+                        using (var stream = System.IO.File.Create(filePath))
+                        {
+                            await image.CopyToAsync(stream);
                         }
                         
                         return Ok(new { message = "Image was saved!" });
@@ -291,6 +290,415 @@ public class MyImagesController : ControllerBase
         {
             Console.WriteLine(ex.Message);
             return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    [HttpPost]
+    [Route("stepper-s1")]
+    public async Task<IActionResult> stepper_s1(IFormFile image)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    
+                    // check datastore for folder with user email
+                    var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                    if (!Directory.Exists(directoryPath))
+                    {
+                        return BadRequest(new { message = "No image in the Cache" });
+                    }
+                    
+                    var subdirectories = Directory.GetDirectories(directoryPath);
+                    if (subdirectories.Length == 0)
+                    {
+                        return BadRequest(new { message= "No subdirectories in the Cache" });
+                    }
+                    var firstSubdirectory = subdirectories[0];
+                    
+                    var finalPath = Path.Combine(directoryPath, firstSubdirectory);
+                    var files = Directory.GetFiles(finalPath);
+                    if (files.Length == 0)
+                    {
+                        return BadRequest(new { message= "No files in the subdirectory" });
+                    }
+                    
+                    //TODO: send  to service for getting areas of text. Expect JSON
+                    
+                    
+                    //dummy return, after service return JSON
+                    return Ok(new { message = "Image areas to highlight" });
+
+                }
+                else
+                {
+                    return BadRequest(new { message = "No authorization token provided" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    
+    [HttpPost]
+    [Route("stepper-s2t")]
+    public async Task<IActionResult> stepper_s2t(IFormFile image)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    
+                    // take areas from formdata
+                    var form = Request.Form;
+                    var areas = form["areas"];
+                    
+                    //TODO: send areas to service for text extraction. Expect zasifrovany text
+                    var dummyText = "Zasifrovany text";
+                    
+                    
+                    // check datastore for folder with user email
+                    var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                    if (!Directory.Exists(directoryPath))
+                    {
+                        return BadRequest(new { message = "No image in the Cache" });
+                    }
+                    
+                    var subdirectories = Directory.GetDirectories(directoryPath);
+                    if (subdirectories.Length == 0)
+                    {
+                        return BadRequest(new { message= "No subdirectories in the Cache" });
+                    }
+                    var firstSubdirectory = subdirectories[0];
+                    var hashForDB = firstSubdirectory;
+                    
+                    var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id && img.Hash == hashForDB);
+                    if (myImage == null)
+                    {
+                        return BadRequest(new { message = "Image is not in the Database" });
+                    }
+                    myImage.Content = dummyText;
+                    context.SaveChanges();
+                    
+                    //dummy return, after service return JSON
+                    return Ok(new { message = dummyText });
+
+
+                }
+                else
+                {
+                    return BadRequest(new { message = "No authorization token provided" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    // ???
+    // s3t
+    // ???
+    // ???
+    // s3t
+    // ???
+    // ???
+    // s3t
+    // ???
+    // ???
+    // s3t
+    // ???
+    // ???
+    // s3t
+    // ???
+    
+    
+    [HttpPost]
+    [Route("stepper-s2k")]
+    public async Task<IActionResult> stepper_s2k(IFormFile image)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    if (image != null && image.Length > 0)
+                    {
+                        
+                        Task<string> hashImageTask = ComputeImageHash(image);
+                        string hashImage = await hashImageTask;
+                        
+                        // create record in database
+                        var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id);
+                        if (myImage == null)
+                        {
+                            myImage = new MyImages();
+                            myImage.UserId = user.Id;
+                            myImage.Type = "KeyDocument";
+                            myImage.Title = "DefaultTitle";
+                            myImage.Content = "DefaultContent";
+                            //myImage.Source = "DefaultSource";
+                            myImage.Decrypted = "DefaultDecrypted";
+                            myImage.Hash = hashImage;
+                            context.MyImages.Add(myImage);
+                        }
+                        else
+                        {
+                            return BadRequest(new { message = "Image is already in the Database" });
+                        }
+                        
+                        // upload image to cache (DS)
+                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                        if (!Directory.Exists(directoryPath))
+                        {
+                            Directory.CreateDirectory(directoryPath);
+                        }
+                    
+                        var filePath = Path.Combine(directoryPath, hashImage);
+                        using (var stream = System.IO.File.Create(filePath))
+                        {
+                            await image.CopyToAsync(stream);
+                        }
+                        
+                        //TODO: send to service for segmentation
+                        
+                        //dummy return, after service return JSON
+                        return Ok(new { message = "JSON XD NEHEHE TU BUDE JSON HAHA HELP ME PLEASE THIS IS FUN IM DYING RETURN IS OK BUT IM NOT ACTUALLY OK IF YOU READ THIS IM 6 FEET UNDER IM LOST IN INFINITE VOID OF DARKNESS FIGHTING DEMONS OF ENDPOINTS" });
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "No image provided" });
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { message = "No authorization token provided" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    
+    
+    //s3k
+    
+    [HttpPost]
+    [Route("stepper-s3k")]
+    public async Task<IActionResult> stepper_s3k(IFormFile image)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    
+                    // take areas from formdata
+                    var form = Request.Form;
+                    var areas = form["areas"];
+                    
+                    //TODO: send areas to service for text extraction. Expect zasifrovany JSON
+                    var dummyKey = "Zasifrovany key";
+                    
+                    
+                    // check datastore for folder with user email
+                    var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                    if (!Directory.Exists(directoryPath))
+                    {
+                        return BadRequest(new { message = "No image in the Cache" });
+                    }
+                    
+                    var subdirectories = Directory.GetDirectories(directoryPath);
+                    if (subdirectories.Length == 0)
+                    {
+                        return BadRequest(new { message= "No subdirectories in the Cache" });
+                    }
+                    var firstSubdirectory = subdirectories[0];
+                    var hashForDB = firstSubdirectory;
+                    
+                    var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id && img.Hash == hashForDB);
+                    if (myImage == null)
+                    {
+                        return BadRequest(new { message = "Image is not in the Database" });
+                    }
+                    myImage.Content = dummyKey;
+                    context.SaveChanges();
+                    
+                    //dummy return, after service return JSON
+                    return Ok(new { message = dummyKey });
+                }
+                else
+                {
+                    return BadRequest(new { message = "No authorization token provided" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    [HttpPost]
+    [Route("stepper-s4")]
+    public async Task<IActionResult> stepper_s4(IFormFile image1, IFormFile image2)
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    if (image1 != null && image1.Length > 0 && image2 != null && image2.Length > 0)
+                    {
+                        
+                        Task<string> hashImageTask1 = ComputeImageHash(image1);
+                        string hashImage1 = await hashImageTask1;
+                        Task<string> hashImageTask2 = ComputeImageHash(image2);
+                        string hashImage2 = await hashImageTask2;
+                        
+                        // find each image in Datastore
+                        var directoryPath = Path.Combine(Directory.GetCurrentDirectory(), "datastore", "Cache", userEmail);
+                        if (!Directory.Exists(directoryPath))
+                        {
+                            return BadRequest(new { message = "No image in the Cache" });
+                        }
+                        
+                        var subdirectories = Directory.GetDirectories(directoryPath);
+                        if (subdirectories.Length == 0)
+                        {
+                            return BadRequest(new { message= "No subdirectories in the Cache" });
+                        }
+                        
+                        var firstSubdirectory = subdirectories[0];
+                        var hashForDB1 = firstSubdirectory;
+                        
+                        var myImage1 = context.MyImages.FirstOrDefault(img => img.UserId == user.Id && img.Hash == hashForDB1);
+                        
+                        if (myImage1 == null)
+                        {
+                            return BadRequest(new { message = "Image is not in the Database" });
+                        }
+                        
+                        var secondSubdirectory = subdirectories[1];
+                        var hashForDb2 = secondSubdirectory;
+                        
+                        var myImage2 = context.MyImages.FirstOrDefault(img => img.UserId == user.Id && img.Hash == hashForDb2);
+                        
+                        if (myImage2 == null)
+                        {
+                            return BadRequest(new { message = "Image is not in the Database" });
+                        }
+                        
+                        // send to service for decryption
+                        
+                        
+                        //dummy return, after service return text
+                        return Ok(new { message = "Decrypted text" });
+                        
+                    }
+                    else
+                    {
+                        return BadRequest(new { message = "No image provided" });
+                    }
+                }
+                else
+                {
+                    return BadRequest(new { message = "No authorization token provided" });
+                }
+            }
+            else
+            {
+                return BadRequest(new { message = "No authorization token provided" });
+            }
+        }
+        catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    public async Task<string> ComputeImageHash(IFormFile image)
+    {
+        using (var memoryStream = new MemoryStream())
+        {
+            await image.CopyToAsync(memoryStream);
+            using (SHA256Managed sha = new SHA256Managed())
+            {
+                byte[] hash = sha.ComputeHash(memoryStream.ToArray());
+                return BitConverter.ToString(hash).Replace("-", "").ToLowerInvariant();
+            }
         }
     }
     

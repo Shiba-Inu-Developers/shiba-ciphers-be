@@ -14,7 +14,12 @@ public class MyImages
     public string? Type { get; set; }
     public string? Title { get; set; }
     public string? Content { get; set; }
+    public string? Hash { get; set; }
     public string? Source { get; set; }
+    
+    public string? Extension { get; set; }
+    public string? Segmented { get; set; }
+    public string? Encrypted { get; set; }
     public string? Decrypted { get; set; }
     public DateTime CreationDate { get; set; }
     [ForeignKey("UserId")]
