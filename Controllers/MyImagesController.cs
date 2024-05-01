@@ -243,7 +243,9 @@ public class MyImagesController : ControllerBase
                         //TODO: call service for classification
 
                         Task<string> hashImageTask = ComputeImageHash(image);
-                        string hashImage = await hashImageTask;
+                        string helpHashImage = await hashImageTask;
+                        string hashImage = "text"+helpHashImage;
+						
 
                         // create record in database
                         var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id);
@@ -258,6 +260,7 @@ public class MyImagesController : ControllerBase
                             myImage.Decrypted = "DefaultDecrypted";
                             myImage.Hash = hashImage;
                             context.MyImages.Add(myImage);
+							context.SaveChanges();
                         }
                         else
                         {
