@@ -459,6 +459,7 @@ public class MyImagesController : ControllerBase
                     {
                         return BadRequest(new { message = "Image is not in the Database" });
                     }
+                    myImage.Areas = areas;
                     myImage.Content = dummyText;
                     context.SaveChanges();
                     
@@ -518,8 +519,10 @@ public class MyImagesController : ControllerBase
                     if (image != null && image.Length > 0)
                     {
                         
-                        Task<string> hashImageTask = ComputeImageHash(image);
-                        string hashImage = await hashImageTask;
+                        Task<string> hashImageTask = ComputeImageHash(image); 
+                        string helpHashImage = await hashImageTask;
+                        string hashImage = "key"+helpHashImage;
+                        
                         
                         // create record in database
                         var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id);
@@ -534,6 +537,7 @@ public class MyImagesController : ControllerBase
                             myImage.Decrypted = "DefaultDecrypted";
                             myImage.Hash = hashImage;
                             context.MyImages.Add(myImage);
+                            context.SaveChanges();
                         }
                         else
                         {
@@ -553,10 +557,27 @@ public class MyImagesController : ControllerBase
                             await image.CopyToAsync(stream);
                         }
                         
-                        //TODO: send to service for segmentation
+                        //TODO: send to service for segmentation. Expect JSON
+                        
+                        
+                        
+                        //create dummy JSON
+                        var dummyJson = new dummyJsonS1
+                        {
+                            area1x = 10,
+                            area1y = 10,
+                            area1width = 10,
+                            area1height = 10,
+                            area2x = 20,
+                            area2y = 20,
+                            area2width = 20,
+                            area2height = 20
+                        };
+
+                        string jsonToSend = JsonSerializer.Serialize(dummyJson);
                         
                         //dummy return, after service return JSON
-                        return Ok(new { message = "JSON XD NEHEHE TU BUDE JSON HAHA HELP ME PLEASE THIS IS FUN IM DYING RETURN IS OK BUT IM NOT ACTUALLY OK IF YOU READ THIS IM 6 FEET UNDER IM LOST IN INFINITE VOID OF DARKNESS FIGHTING DEMONS OF ENDPOINTS" });
+                        return Ok(jsonToSend);
                     }
                     else
                     {

@@ -18,6 +18,7 @@ public class MyImages
     public string? Source { get; set; }
     
     public string? Extension { get; set; }
+    public string? Areas { get; set; }
     public string? Segmented { get; set; }
     public string? Encrypted { get; set; }
     public string? Decrypted { get; set; }
