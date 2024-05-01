@@ -214,10 +214,24 @@ public class MyImagesController : ControllerBase
     //Get Image by ID?
     //GET ...?
     
-    public class dummyJson
+    public class dummyJsonS0
     {
         public int TextPercentage { get; set; }
         public int KeyPercentage { get; set; }
+    }
+    
+    public class dummyJsonS1
+    {
+        public int area1x { get; set; }
+        public int area1y { get; set; }
+        public int area1width { get; set; }
+        public int area1height { get; set; }
+        
+        public int area2x { get; set; }
+        public int area2y { get; set; }
+        public int area2width { get; set; }
+        public int area2height { get; set; }
+        
     }
     
     
@@ -282,7 +296,7 @@ public class MyImagesController : ControllerBase
                         }
 
                         //create dummy JSON
-                        var dummyJson = new dummyJson
+                        var dummyJson = new dummyJsonS0
                         {
                             TextPercentage = 90,
                             KeyPercentage = 10
@@ -318,7 +332,7 @@ public class MyImagesController : ControllerBase
     
     [HttpPost]
     [Route("stepper-s1")]
-    public async Task<IActionResult> stepper_s1(IFormFile image)
+    public async Task<IActionResult> stepper_s1()
     {
         try
         {
@@ -337,26 +351,43 @@ public class MyImagesController : ControllerBase
                     {
                         return BadRequest(new { message = "No image in the Cache" });
                     }
-                    
-                    var subdirectories = Directory.GetDirectories(directoryPath);
-                    if (subdirectories.Length == 0)
-                    {
-                        return BadRequest(new { message= "No subdirectories in the Cache" });
-                    }
-                    var firstSubdirectory = subdirectories[0];
-                    
-                    var finalPath = Path.Combine(directoryPath, firstSubdirectory);
-                    var files = Directory.GetFiles(finalPath);
+
+                    var files = Directory.GetFiles(directoryPath);
                     if (files.Length == 0)
                     {
                         return BadRequest(new { message= "No files in the subdirectory" });
                     }
                     
-                    //TODO: send  to service for getting areas of text. Expect JSON
                     
+                    var textFile = files.FirstOrDefault(f => Path.GetFileName(f).StartsWith("text"));
+                    if (textFile == null)
+                    {
+                        return BadRequest(new { message = "No text file in the Cache" });
+                    }
+                    
+                    
+                    
+                    //TODO: send image to service for getting areas of text. Expect JSON
+                    
+                    
+                    
+                    //create dummy JSON
+                    var dummyJson = new dummyJsonS1
+                    {
+                        area1x = 10,
+                        area1y = 10,
+                        area1width = 10,
+                        area1height = 10,
+                        area2x = 20,
+                        area2y = 20,
+                        area2width = 20,
+                        area2height = 20
+                    };
+
+                    string jsonToSend = JsonSerializer.Serialize(dummyJson);
                     
                     //dummy return, after service return JSON
-                    return Ok(new { message = "Image areas to highlight" });
+                    return Ok(jsonToSend);
 
                 }
                 else
