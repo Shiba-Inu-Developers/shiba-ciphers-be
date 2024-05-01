@@ -459,6 +459,7 @@ public class MyImagesController : ControllerBase
                     {
                         return BadRequest(new { message = "Image is not in the Database" });
                     }
+                    myImage.Areas = areas;
                     myImage.Content = dummyText;
                     context.SaveChanges();
                     
