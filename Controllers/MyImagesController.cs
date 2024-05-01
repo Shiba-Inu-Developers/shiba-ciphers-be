@@ -254,7 +254,7 @@ public class MyImagesController : ControllerBase
                         //steps:
                         //s1, s2t, s3t, s2k, s3k, s4, s5
 
-                        //TODO: call service for classification
+                        //TODO: call service for classification. Expect % of text and % of key
 
                         Task<string> hashImageTask = ComputeImageHash(image);
                         string helpHashImage = await hashImageTask;
@@ -410,7 +410,7 @@ public class MyImagesController : ControllerBase
     
     [HttpPost]
     [Route("stepper-s2t")]
-    public async Task<IActionResult> stepper_s2t(IFormFile image)
+    public async Task<IActionResult> stepper_s2t()
     {
         try
         {
@@ -427,7 +427,7 @@ public class MyImagesController : ControllerBase
                     var form = Request.Form;
                     var areas = form["areas"];
                     
-                    //TODO: send areas to service for text extraction. Expect zasifrovany text
+                    //TODO: send areas from form to service for text extraction. Expect zasifrovany text
                     var dummyText = "Zasifrovany text";
                     
                     
@@ -438,15 +438,23 @@ public class MyImagesController : ControllerBase
                         return BadRequest(new { message = "No image in the Cache" });
                     }
                     
-                    var subdirectories = Directory.GetDirectories(directoryPath);
-                    if (subdirectories.Length == 0)
+                    var files = Directory.GetFiles(directoryPath);
+                    if (files.Length == 0)
                     {
-                        return BadRequest(new { message= "No subdirectories in the Cache" });
+                        return BadRequest(new { message= "No files in the subdirectory" });
                     }
-                    var firstSubdirectory = subdirectories[0];
-                    var hashForDB = firstSubdirectory;
                     
-                    var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id && img.Hash == hashForDB);
+                    
+                    var textFile = files.FirstOrDefault(f => Path.GetFileName(f).StartsWith("text"));
+                    if (textFile == null)
+                    {
+                        return BadRequest(new { message = "No text file in the Cache" });
+                    }
+                    
+                    var hashForDb = Path.GetFileName(textFile);
+                    
+                    
+                    var myImage = context.MyImages.FirstOrDefault(img => img.UserId == user.Id && img.Hash == hashForDb);
                     if (myImage == null)
                     {
                         return BadRequest(new { message = "Image is not in the Database" });
