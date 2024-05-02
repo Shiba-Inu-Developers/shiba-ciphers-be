@@ -111,6 +111,83 @@ public class MyImagesController : ControllerBase
         }
     }
     
+    [HttpGet]
+    //History
+    [Route("text-records")]
+    public IActionResult GetImageTexts()
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+               
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    // also type of image is text
+                    ICollection<MyImages> images = context.MyImages.Where(img => img.UserId == user.Id && img.Type == "text").ToList();
+                    var imageDTO = images.Select(myimage => new ImageHistoryDTO()
+                    {
+                        Type = myimage.Type,
+                        Title = myimage.Title,
+                        Content = myimage.Content,
+                        Decrypted = myimage.Decrypted,
+                        CreationDate = myimage.CreationDate
+                    }).ToList();
+                    return Ok(imageDTO);
+                }
+                return BadRequest(new { message = "No authorization token provided" });
+                
+            }
+            return BadRequest(new { message = "No authorization token provided" });
+        }catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
+    [HttpGet]
+    //History
+    [Route("key-records")]
+    public IActionResult GetImageKeys()
+    {
+        try
+        {
+            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
+            if (authHeader != null && authHeader.StartsWith("Bearer "))
+            {
+               
+                var token = authHeader.Substring("Bearer ".Length).Trim();
+                var userEmail = authService.GetEmailFromToken(token);
+                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+                if (user != null)
+                {
+                    ICollection<MyImages> images = context.MyImages.Where(img => img.UserId == user.Id && img.Type == "key").ToList();
+                    var imageDTO = images.Select(myimage => new ImageHistoryDTO()
+                    {
+                        Type = myimage.Type,
+                        Title = myimage.Title,
+                        Content = myimage.Content,
+                        Decrypted = myimage.Decrypted,
+                        CreationDate = myimage.CreationDate
+                    }).ToList();
+                    return Ok(imageDTO);
+                }
+                return BadRequest(new { message = "No authorization token provided" });
+                
+            }
+            return BadRequest(new { message = "No authorization token provided" });
+        }catch (Exception ex)
+        {
+            Console.WriteLine(ex.Message);
+            return StatusCode(500, new { error = "Internal Server Error" });
+        }
+    }
+    
     
     //Get concrete dokument by Date for concrete user 
     [HttpGet]
@@ -267,7 +344,7 @@ public class MyImagesController : ControllerBase
                         {
                             myImage = new MyImages();
                             myImage.UserId = user.Id;
-                            myImage.Type = "TextDocument";
+                            myImage.Type = "text";
                             myImage.Title = "DefaultTitle";
                             myImage.Content = "DefaultContent";
                             //myImage.Source = "DefaultSource";
@@ -530,7 +607,7 @@ public class MyImagesController : ControllerBase
                         {
                             myImage = new MyImages();
                             myImage.UserId = user.Id;
-                            myImage.Type = "KeyDocument";
+                            myImage.Type = "key";
                             myImage.Title = "DefaultTitle";
                             myImage.Content = "DefaultContent";
                             //myImage.Source = "DefaultSource";
@@ -607,7 +684,7 @@ public class MyImagesController : ControllerBase
     
     [HttpPost]
     [Route("stepper-s3k")]
-    public async Task<IActionResult> stepper_s3k(IFormFile image)
+    public async Task<IActionResult> stepper_s3k()
     {
         try
         {
