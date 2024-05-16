@@ -246,6 +246,7 @@ public class MyImagesController : ControllerBase
         public int y { get; set; }
         public int width { get; set; }
         public int height { get; set; }
+        public string? type { get; set; }
     }
 
     public class ExtractRequest
