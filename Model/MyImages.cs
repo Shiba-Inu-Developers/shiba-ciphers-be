@@ -4,26 +4,34 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 namespace my_new_app.Model;
 
+[Table("images")]
 public class MyImages
 {
-    [Key] 
+    [Key]
     [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+    [Column("id")]
     public int Id { get; set; }
+    [Column("user_id")]
     public int UserId { get; set; }
 
+    [Column("type")]
     public string? Type { get; set; }
+    [Column("title")]
     public string? Title { get; set; }
-    public string? Content { get; set; }
+    [Column("description")]
+    public string? Description { get; set; }
+    [Column("hash")]
     public string? Hash { get; set; }
-    public string? Source { get; set; }
-    
+    [Column("ext")]
     public string? Extension { get; set; }
-    public string? Areas { get; set; }
-    public string? Segmented { get; set; }
-    public string? Encrypted { get; set; }
-    public string? Decrypted { get; set; }
+    [Column("content")]
+    public string? Content { get; set; }
+    [Column("decrypted_content")]
+    public string? DecryptedContent { get; set; }
+    [Column("creation_date")]
     public DateTime CreationDate { get; set; }
-    [ForeignKey("UserId")]
+
+    [ForeignKey(nameof(UserId))]
     public User? User { get; set; }
 }
 

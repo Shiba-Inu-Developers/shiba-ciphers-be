@@ -44,6 +44,7 @@ builder.Services.AddAuthentication(options =>
 
 
 builder.Services.AddScoped<AuthService>();
+builder.Services.AddSingleton<HttpClientService>();
 
 var app = builder.Build();
 

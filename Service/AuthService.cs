@@ -119,7 +119,7 @@ public class AuthService
             issuer: "MyAppAPI",
             audience: "MyAppUsers",
             claims: claims,
-            expires: DateTime.Now.AddMinutes(2), // Token expiration time
+            expires: DateTime.Now.AddMinutes(30), // Token expiration time
             signingCredentials: credentials);
         
         
