@@ -6,6 +6,7 @@
         <IsPackable>false</IsPackable>
         <RootNamespace>my_new_app</RootNamespace>
         <ImplicitUsings>enable</ImplicitUsings>
+        <NuGetAudit>false</NuGetAudit>
     </PropertyGroup>
 
     <ItemGroup>
