@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using my_new_app.Model;
 using my_new_app.DTOs;
 using my_new_app.Service;
@@ -70,7 +70,7 @@ public class WeatherForecastController : ControllerBase
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
-    
+
     [HttpPost]
     [Route("Logout")]
     public async Task<IActionResult> Logout()
@@ -80,12 +80,12 @@ public class WeatherForecastController : ControllerBase
         if (authHeader != null && authHeader.StartsWith("Bearer "))
         {
             var token = authHeader.Substring("Bearer ".Length).Trim();
-            
+
             var userEmail = authService.GetEmailFromToken(token);
             User user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
             user.RefreshToken = "";
             context.SaveChanges();
-            
+
             return Ok(new { token = "", message = "Logout successful" });
         }
 
@@ -98,11 +98,11 @@ public class WeatherForecastController : ControllerBase
         var users = context.MyUsers.ToList();
 
         return Enumerable.Range(1, 5).Select(index => new WeatherForecast
-            {
-                Date = DateTime.Now.AddDays(index),
-                TemperatureC = Random.Shared.Next(-20, 55),
-                Summary = Summaries[Random.Shared.Next(Summaries.Length)]
-            })
+        {
+            Date = DateTime.Now.AddDays(index),
+            TemperatureC = Random.Shared.Next(-20, 55),
+            Summary = Summaries[Random.Shared.Next(Summaries.Length)]
+        })
             .ToArray();
     }
 
@@ -225,10 +225,10 @@ public class WeatherForecastController : ControllerBase
     {
         return Ok(new { message = "Hello World!" });
     }
-    
-    
+
+
     [HttpGet]
-    [Route("user-info")] 
+    [Route("user-info")]
     public async Task<IActionResult> GetUserInfo()      //TODO create UserService for Users
     {
         try
@@ -249,15 +249,16 @@ public class WeatherForecastController : ControllerBase
                 return Ok(userInfoDto);
             }
             return BadRequest(new { message = "No authorization token provided" });     //Unauthorized or BadRequest?
-        }catch (Exception ex)
+        }
+        catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
-    
+
     [HttpPut]
-    [Route("update-user-info")] 
+    [Route("update-user-info")]
     public async Task<IActionResult> ChangeUserInfo([FromBody] UserUpdateInfoDTO userUpdate)
     {
         try
@@ -291,55 +292,18 @@ public class WeatherForecastController : ControllerBase
                 return Ok(userInfoDto);
             }
             return BadRequest(new { message = "No authorization token provided" }); //Unauthorized or BadRequest?
-        }catch (Exception ex)
-        {
-            Console.WriteLine(ex.Message);
-            return StatusCode(500, new { error = "Internal Server Error" });
         }
-    }
-    
-    [HttpGet]
-    //History
-    [Route("history-images")]
-    public IActionResult GetImage()
-    {
-        try
-        {
-            var authHeader = HttpContext.Request.Headers["Authorization"].FirstOrDefault();
-            if (authHeader != null && authHeader.StartsWith("Bearer "))
-            {
-               
-                var token = authHeader.Substring("Bearer ".Length).Trim();
-                var userEmail = authService.GetEmailFromToken(token);
-                var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
-                if (user != null)
-                {
-                    ICollection<MyImages> images = context.MyImages.Where(img => img.UserId == user.Id).ToList();
-                    var imageDTO = images.Select(myimage => new ImageHistoryDTO()
-                    {
-                        Type = myimage.Type,
-                        Title = myimage.Title,
-                        Content = myimage.Content,
-                        Decrypted = myimage.Decrypted,
-                        CreationDate = myimage.CreationDate
-                    }).ToList();
-                    return Ok(imageDTO);
-                }
-                return BadRequest(new { message = "No authorization token provided" });
-                
-            }
-            return BadRequest(new { message = "No authorization token provided" });
-        }catch (Exception ex)
+        catch (Exception ex)
         {
             Console.WriteLine(ex.Message);
             return StatusCode(500, new { error = "Internal Server Error" });
         }
     }
 
-  [HttpGet]
-  [Route("shiba")]
-  public IActionResult GetShiba()
-  {
-    return PhysicalFile(@"/mnt/datastore/shiba.jpg", "image/jpeg");
-  }
+    [HttpGet]
+    [Route("shiba")]
+    public IActionResult GetShiba()
+    {
+        return PhysicalFile(@"/mnt/datastore/shiba.jpg", "image/jpeg");
+    }
 }
