@@ -330,6 +330,8 @@ public class MyImagesController : ControllerBase
                 context.Segments.Add(new Segment { ImageId = myImage.Id, data = data, content = content });
             }
         }
+
+        myImage.Content = responseJson;
         context.SaveChanges();
 
         return Ok(responseJson);
@@ -439,4 +441,37 @@ public class MyImagesController : ControllerBase
 
         return Ok(responseString);
     }
+    
+    
+    [HttpGet]
+    [Route("all-images")]
+    public IActionResult GetAllImages()
+    {
+        var userEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+
+        if (user == null)
+        {
+            return Unauthorized("Invalid token");
+        }
+
+        var images = context.MyImages.Where(i => i.UserId == user.Id)
+            .Select(i => new 
+            {
+                Id = i.Id,
+                UserId = i.UserId,
+                Type = i.Type,
+                Title = i.Title,
+                Description = i.Description,
+                Hash = i.Hash,
+                Extension = i.Extension,
+                Content = i.Content,
+                DecryptedContent = i.DecryptedContent,
+                CreationDate = i.CreationDate
+            })
+            .ToList();
+
+        return Ok(images);
+    }
+    
 }
