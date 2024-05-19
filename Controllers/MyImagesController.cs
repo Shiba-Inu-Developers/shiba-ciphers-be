@@ -115,7 +115,7 @@ public class MyImagesController : ControllerBase
 
     [HttpPut]
     [Route("stepper-s0")]
-    public async Task<IActionResult> stepper_s0(IFormFile image)
+    public async Task<IActionResult> stepper_s0(IFormFile image, [FromForm] string imageTitle)
     {
         var userEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
         var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
@@ -161,7 +161,8 @@ public class MyImagesController : ControllerBase
         {
             UserId = user.Id,
             Extension = ext,
-            Hash = hash
+            Hash = hash,
+            Title = imageTitle
         };
         context.MyImages.Add(myImage);
         context.SaveChanges();
