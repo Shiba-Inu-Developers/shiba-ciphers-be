@@ -474,4 +474,35 @@ public class MyImagesController : ControllerBase
         return Ok(images);
     }
     
+    
+    [HttpGet]
+    [Route("get-image-ds/{hash}")]
+    public IActionResult GetImageDs(string hash)
+    {
+        var userEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+
+        if (user == null)
+        {
+            return Unauthorized("Invalid token");
+        }
+
+        var myImage = context.MyImages.FirstOrDefault(img => img.Hash == hash);
+
+        if (myImage == null)
+        {
+            return BadRequest("Image not found");
+        }
+
+        if (myImage.UserId != user.Id)
+        {
+            return Unauthorized("User does not own the image");
+        }
+
+        var filePath = Path.Combine("/mnt", "datastore", hash);
+        var contentType = "image/" + myImage.Extension;
+
+        return PhysicalFile(filePath, contentType);
+    }
+    
 }
