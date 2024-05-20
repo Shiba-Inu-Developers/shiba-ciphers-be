@@ -20,6 +20,8 @@ public class MyImages
     public string? Title { get; set; }
     [Column("description")]
     public string? Description { get; set; }
+    [Column("public")]
+    public bool? Public { get; set; }
     [Column("hash")]
     public string? Hash { get; set; }
     [Column("ext")]
@@ -43,6 +45,8 @@ public class MyImagesConfiguration : IEntityTypeConfiguration<MyImages>
         builder.Property(u => u.CreationDate)
             .HasDefaultValueSql("CURRENT_TIMESTAMP")
             .IsRequired();
+
+        builder.Property(p => p.Public).HasDefaultValue(false);
 
         builder.HasOne(u => u.User)
             .WithMany()
