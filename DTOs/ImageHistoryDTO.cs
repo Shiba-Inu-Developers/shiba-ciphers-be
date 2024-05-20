@@ -7,4 +7,5 @@ public class ImageHistoryDTO
     public string? Content { get; set; }
     public string? Decrypted { get; set; }
     public DateTime CreationDate { get; set; }
+    public bool? Public { get; set; }
 }

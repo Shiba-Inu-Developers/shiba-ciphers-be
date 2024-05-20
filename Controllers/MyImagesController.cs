@@ -7,8 +7,6 @@ using System.Security.Cryptography;
 using System.Text;
 using System.Text.Json;
 using System.Security.Claims;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
-using Microsoft.AspNetCore.Mvc.ModelBinding;
 using System.ComponentModel.DataAnnotations;
 
 
@@ -66,8 +64,39 @@ public class MyImagesController : ControllerBase
         {
             Type = i.Type,
             Title = i.Title,
-            CreationDate = i.CreationDate
+            CreationDate = i.CreationDate,
+            Public = i.Public
         }).ToList());
+    }
+
+    [HttpPost]
+    [Route("change-public/{hash}")]
+    public IActionResult ChangePublic(string hash, bool ppublic)
+    {
+        var userEmail = User.Claims.FirstOrDefault(c => c.Type == ClaimTypes.NameIdentifier)?.Value;
+        var user = context.MyUsers.FirstOrDefault(u => u.Email == userEmail);
+
+        if (user == null)
+        {
+            return Unauthorized("Invalid token");
+        }
+
+        var myImage = context.MyImages.FirstOrDefault(img => img.Hash == hash);
+
+        if (myImage == null)
+        {
+            return BadRequest("Image not found");
+        }
+
+        if (myImage.UserId != user.Id)
+        {
+            return Unauthorized("User does not own the image");
+        }
+
+        myImage.Public = ppublic;
+        context.SaveChanges();
+
+        return Ok();
     }
 
     [HttpGet]
@@ -86,7 +115,8 @@ public class MyImagesController : ControllerBase
         {
             Type = i.Type,
             Title = i.Title,
-            CreationDate = i.CreationDate
+            CreationDate = i.CreationDate,
+            Public = i.Public
         }).ToList());
     }
 
