@@ -146,10 +146,6 @@ public class MyImagesController : ControllerBase
         }
 
         var myImage = context.MyImages.Where(img => img.UserId == user.Id && img.Hash == hash).FirstOrDefault();
-        if (myImage != null)
-        {
-            return BadRequest(new { message = "Image is already in the Database" });
-        }
 
         var filePath = Path.Combine("/mnt", "datastore", hash);
         using (var stream = System.IO.File.Create(filePath))
@@ -157,14 +153,23 @@ public class MyImagesController : ControllerBase
             await image.CopyToAsync(stream);
         }
 
-        myImage = new MyImages
+        if (myImage != null)
         {
-            UserId = user.Id,
-            Extension = ext,
-            Hash = hash,
-            Title = imageTitle
-        };
-        context.MyImages.Add(myImage);
+            myImage.Extension = ext;
+            myImage.Title = imageTitle;
+        }
+        else
+        {
+            myImage = new MyImages
+            {
+                UserId = user.Id,
+                Extension = ext,
+                Hash = hash,
+                Title = imageTitle
+            };
+            context.MyImages.Add(myImage);
+        }
+
         context.SaveChanges();
 
         var multipart = new MultipartFormDataContent
@@ -441,8 +446,8 @@ public class MyImagesController : ControllerBase
 
         return Ok(responseString);
     }
-    
-    
+
+
     [HttpGet]
     [Route("all-images")]
     public IActionResult GetAllImages()
@@ -456,7 +461,7 @@ public class MyImagesController : ControllerBase
         }
 
         var images = context.MyImages.Where(i => i.UserId == user.Id)
-            .Select(i => new 
+            .Select(i => new
             {
                 Id = i.Id,
                 UserId = i.UserId,
@@ -473,8 +478,8 @@ public class MyImagesController : ControllerBase
 
         return Ok(images);
     }
-    
-    
+
+
     [HttpGet]
     [Route("get-image-ds/{hash}")]
     public IActionResult GetImageDs(string hash)
@@ -504,5 +509,5 @@ public class MyImagesController : ControllerBase
 
         return PhysicalFile(filePath, contentType);
     }
-    
+
 }
